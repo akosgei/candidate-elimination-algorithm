@@ -41,39 +41,47 @@ class CandidateElimination:
         '''
         count=0
         for trial_set in self.dataset:
-            if self.is_positive(trial_set): #if trial set/example consists of positive examples
-                G = self.remove_inconsistent_G(G,trial_set[0]) #remove inconsitent data from the general boundary
+            print '--------------------- Start example -----------'
+            if self.is_positive(trial_set):
+                print 'Positive example: ' + str(trial_set)
+                G = self.remove_inconsistent_G(G,trial_set[0]) 
                 S_new = S[:] #initialize the dictionary with no key-value pair
-                print S_new
                 for s in S:
                     if not self.consistent(s,trial_set[0]):
+                        print 'Remove ' + str(s) + ' from S because non consistent'
                         S_new.remove(s)
                         generalization = self.generalize_inconsistent_S(s,trial_set[0])
                         generalization = self.get_general(generalization,G)
                         if generalization:
+                            print 'Add generalizations ' + str(generalization) + ' to S'
                             S_new.append(generalization)
+                        else:
+                             print 'No generalizations found for G'
                     S = S_new[:]
                     S = self.remove_more_general(S)
-                   
-                    print S
+                    print 'S: ' + str(S)
+                    print 'G: ' + str(G)
             else:#if it is negative
-                S = self.remove_inconsistent_S(S,trial_set[0]) #remove inconsitent data from the specific boundary
+                print 'Negative example: ' + str(trial_set)
+                S = self.remove_inconsistent_S(S, trial_set[0])
                 G_new = G[:] #initialize the dictionary with no key-value pair (dataset can take any value)
-                print G_new
                 for g in G:
                     if self.consistent(g,trial_set[0]):
+                        print 'Remove ' + str(g) + ' from g because non consistent'
                         G_new.remove(g)
                         specializations = self.specialize_inconsistent_G(g,trial_set[0])
                         specializationss = self.get_specific(specializations,S)
                         if specializations != []:
+                            print 'Add  specializations ' + str(specializations) + ' to G'
                             G_new += specializations
+                        else:
+                             print 'No specializations found for S'
                     G = G_new[:] 
-                    print G
                     G = self.remove_more_specific(G)
-        
-        print S
-        print G
-    
+                    print 'S: ' + str(S)
+                    print 'G: ' + str(G)
+        print '--------------------- End example -----------'
+
     def initializeS(self):
         ''' Initialize the specific boundary '''
         S = tuple(['-' for factor in range(self.num_factors)]) #6 constraints in the vector
@@ -125,6 +133,7 @@ class CandidateElimination:
         G_new = hypotheses[:]
         for g in hypotheses:
             if not self.consistent(g,instance):
+                print 'Remove inconsistent' + str(g) + ' from G'
                 G_new.remove(g)
         return G_new
 
@@ -134,6 +143,7 @@ class CandidateElimination:
         S_new = hypotheses[:]
         for s in hypotheses:
             if self.consistent(s,instance):
+                print 'Remove inconsistent' + str(s) + ' from S'
                 S_new.remove(s)
         return S_new
         
@@ -144,7 +154,8 @@ class CandidateElimination:
         for old in hypotheses:
             for new in S_new:
                 if old!=new and self.more_general(new,old):
-                    S_new.remove[new]
+                    print 'Remove more general ' + str(new) + 'from S'
+                    S_new.remove(new)
         return S_new
 
     def remove_more_specific(self,hypotheses):
@@ -154,12 +165,14 @@ class CandidateElimination:
         for old in hypotheses:
             for new in G_new:
                 if old!=new and self.more_specific(new,old):
-                    G_new.remove[new]
+                    print 'Remove more specific ' + str(new) + 'from S'
+                    G_new.remove(new)
         return G_new
 
     def generalize_inconsistent_S(self,hypothesis,instance):
         ''' When a inconsistent hypothesis for positive trial_set is seen in the specific boundary S,
             it should be generalized to be consistent with the trial_set ... we will get one hypothesis'''
+        print 'Generalize S'
         hypo = list(hypothesis) # convert tuple to list for mutability
         for i,factor in enumerate(hypo):
             if factor == '-':
@@ -172,6 +185,7 @@ class CandidateElimination:
     def specialize_inconsistent_G(self,hypothesis,instance):
         ''' When a inconsistent hypothesis for negative trial_set is seen in the general boundary G
             should be specialized to be consistent with the trial_set.. we will get a set of hypotheses '''
+        print 'Specialize G'
         specializations = []
         hypo = list(hypothesis) # convert tuple to list for mutability
         for i,factor in enumerate(hypo):
@@ -266,17 +280,18 @@ class CandidateElimination:
 
 
 
-dataset=[(('sunny','warm','normal','strong','warm','same'),'Y'),(('sunny','warm','high','strong','warm','same'),'Y'),(('rainy','cold','high','strong','warm','change'),'N'),(('sunny','warm','high','strong','cool','change'),'Y')]
-attributes =('Sky','Temp','Humidity','Wind','Water','Forecast')
-
+dataset=[(('europa','tren','si','pension','barato'),'Y'),
+(('europa','avion','no','hotel','caro'),'N'),
+(('europa','avion','no','pension','barato'),'Y'),
+(('asia','tren','no','hotel','barato'),'N'),
+(('europa','tren','si','albergue','barato'),'Y')]
+attributes = ('destino', 'transporte', 'transbordo', 'alojamiento', 'precio')
 
 f = Holder(attributes)
-f.add_values('Sky',('sunny','rainy','cloudy')) #sky can be sunny rainy or cloudy
-f.add_values('Temp',('cold','warm')) #Temp can be sunny cold or warm
-f.add_values('Humidity',('normal','high')) #Humidity can be normal or high
-f.add_values('Wind',('weak','strong')) #wind can be weak or strong
-f.add_values('Water',('warm','cold')) #water can be warm or cold
-f.add_values('Forecast',('same','change')) #Forecast can be same or change
+f.add_values('destino',('europa','asia')) #sky can be sunny rainy or cloudy
+f.add_values('transporte',('tren','avion')) #Temp can be sunny cold or warm
+f.add_values('transbordo',('si','no')) #Humidity can be normal or high
+f.add_values('alojamiento',('pension','hotel', 'albergue')) #wind can be weak or strong
+f.add_values('precio',('barato','caro')) #water can be warm or cold
 a = CandidateElimination(dataset,f) #pass the dataset to the algorithm class and call the run algoritm method
 a.run_algorithm()
-
